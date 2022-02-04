@@ -20,12 +20,13 @@ describe('tag plan validation', function () {
           message: 'Tag with id "person" cannot be created more than once.',
           details: {
             step: {
-              'type': 'tag/create',
-              'meta': {
-                'tagInstanceId': 'tag/person/1'
+              type: 'tag/create',
+              meta: {
+                tagInstanceId: 'tag/person/1'
               },
-              'payload': {
-                'tagId': 'person'
+              payload: {
+                tagId: 'person',
+                tagVisibility: 'private'
               }
             }
           }
@@ -56,14 +57,14 @@ describe('tag plan validation', function () {
           message: 'You cannot set a property on tag "person" because it has not yet been created.',
           details: {
             step: {
-              'type': 'tag/update',
-              'meta': {
-                'tagInstanceId': 'tag/person/0'
+              type: 'tag/update',
+              meta: {
+                tagInstanceId: 'tag/person/0'
               },
-              'payload': {
-                'tagId': 'person',
-                'props': {
-                  'name': 'foo'
+              payload: {
+                tagId: 'person',
+                props: {
+                  name: 'foo'
                 }
               }
             }
@@ -101,12 +102,13 @@ describe('tag plan validation', function () {
           message: 'Tag with id "person" already exists.',
           details: {
             step: {
-              'type': 'tag/create',
-              'meta': {
-                'tagInstanceId': 'tag/person/1'
+              type: 'tag/create',
+              meta: {
+                tagInstanceId: 'tag/person/1'
               },
-              'payload': {
-                'tagId': 'person'
+              payload: {
+                tagId: 'person',
+                tagVisibility: 'private'
               }
             }
           }
@@ -135,12 +137,13 @@ describe('tag plan validation', function () {
           message: 'Tag with id "person" already exists.',
           details: {
             step: {
-              'type': 'tag/create',
-              'meta': {
-                'tagInstanceId': 'tag/person/0'
+              type: 'tag/create',
+              meta: {
+                tagInstanceId: 'tag/person/0'
               },
-              'payload': {
-                'tagId': 'person'
+              payload: {
+                tagId: 'person',
+                tagVisibility: 'private'
               }
             }
           }
@@ -169,14 +172,14 @@ describe('tag plan validation', function () {
           message: 'Tag with name "foo" already exists.',
           details: {
             step: {
-              'type': 'tag/update',
-              'meta': {
-                'tagInstanceId': 'tag/differentId/0'
+              type: 'tag/update',
+              meta: {
+                tagInstanceId: 'tag/differentId/0'
               },
-              'payload': {
-                'tagId': 'differentId',
-                'props': {
-                  'name': 'foo'
+              payload: {
+                tagId: 'differentId',
+                props: {
+                  name: 'foo'
                 }
               }
             }
@@ -212,13 +215,13 @@ describe('tag plan validation', function () {
           message: 'You cannot set a property on tag "person" because it does not exist.',
           details: {
             step: {
-              'type': 'tag/update',
-              'meta': {
-                'tagInstanceId': 'tag/person/0'
+              type: 'tag/update',
+              meta: {
+                tagInstanceId: 'tag/person/0'
               },
-              'payload': {
-                'tagId': 'person',
-                'props': {
+              payload: {
+                tagId: 'person',
+                props: {
                   name: 'foo'
                 }
               }
@@ -230,14 +233,14 @@ describe('tag plan validation', function () {
           message: 'You cannot set a property on tag "person" because it does not exist.',
           details: {
             step: {
-              'type': 'tag/update',
-              'meta': {
-                'tagInstanceId': 'tag/person/1'
+              type: 'tag/update',
+              meta: {
+                tagInstanceId: 'tag/person/1'
               },
-              'payload': {
-                'tagId': 'person',
-                'props': {
-                  'name': 'the new name'
+              payload: {
+                tagId: 'person',
+                props: {
+                  name: 'the new name'
                 }
               }
             }
@@ -262,14 +265,14 @@ describe('tag plan validation', function () {
           message: 'You are setting the property "name" on tag "person" more than once. Please set it only once.',
           details: {
             step: {
-              'type': 'tag/update',
-              'meta': {
-                'tagInstanceId': 'tag/person/0'
+              type: 'tag/update',
+              meta: {
+                tagInstanceId: 'tag/person/0'
               },
-              'payload': {
-                'tagId': 'person',
-                'props': {
-                  'name': 'Person McPersonface'
+              payload: {
+                tagId: 'person',
+                props: {
+                  name: 'Person McPersonface'
                 }
               }
             }

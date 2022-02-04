@@ -174,13 +174,36 @@ module.exports = function (migration, context) {
 };
 ```
 
+You can also pass the function directly. For example:
+
+```javascript
+const { runMigration } = require('contentful-migration')
+
+function migrationFunction (migration, context) {
+  const dog = migration.createContentType('dog');
+  const name = dog.createField('name');
+  name.type('Symbol').required(true);
+}
+
+const options = {
+  migrationFunction,
+  spaceId: '<space-id>',
+  accessToken: '<access-token>'
+}
+
+runMigration(options)
+        .then(() => console.log('Migration Done!'))
+        .catch((e) => console.error(e))
+```
+
 ## Documentation & References
 
 ### Configuration
 
 | Name              | Default    | Type    | Description                                                 | Required |
 |-------------------|------------|---------|-------------------------------------------------------------|----------|
-| filePath          |            | string  | The path to the migration file                              | true     |
+| filePath          |            | string  | The path to the migration file                              | if `migrationFunction` is not supplied     |
+| migrationFunction |            | function| Specify the migration function directly. See the [expected signature](https://github.com/contentful/contentful-migration/blob/4b9dcae0e7616da9153d0fa481871978595049e7/index.d.ts#L506).               | if `filePath` is not supplied    |
 | spaceId           |            | string  | ID of the space to run the migration script on              | true     |
 | environmentId     | `'master'` | string  | ID of the environment within the space to run the           | false    |
 | accessToken       |            | string  | The access token to use                                     | true     |
@@ -299,7 +322,7 @@ The derive function is expected to return an object with the desired target fiel
 
   The return value must be an object with the same keys as specified in `derivedFields`. Their values will be written to the respective new entry fields for the current locale (i.e. `{nameField: 'myNewValue'}`)
 
-- **`shouldPublish : bool`** _(optional)_ – Flag that specifies publishing of target entries. (default `true`)
+- **`shouldPublish : bool|'preserve'`** _(optional)_ – If true, both the source and the derived entries will be published. If false, both will remain in draft state. If preserve, will keep current states of the source entries (default `true`)
 
 
 ##### `deriveLinkedEntries(config)` Example
@@ -341,7 +364,7 @@ For the given (source) content type, transforms all its entries according to the
 - **`from : array`** _(optional)_ – Array of the source field IDs, returns complete list of fields if not configured
 - **`identityKey: function (fields): string`** _(required)_ - Function to create a new entry ID for the target entry
 - **`shouldPublish : bool | 'preserve'`** _(optional)_ – Flag that specifies publishing of target entries, `preserve` will keep current states of the source entries (default `false`)
-- **`updateReferences : bool`** _(optional)_ – Flag that specifies if linking entries should be updated with target entries (default `false`)
+- **`updateReferences : bool`** _(optional)_ – Flag that specifies if linking entries should be updated with target entries (default `false`). Note that this flag does not support Rich Text Fields references.
 - **`removeOldEntries : bool`** _(optional)_ – Flag that specifies if source entries should be deleted (default `false`)
 - **`transformEntryForLocale : function (fields, locale): object`** _(required)_ – Transformation function to be applied.
     - `fields` is an object containing each of the `from` fields. Each field will contain their current localized values (i.e. `fields == {myField: {'en-US': 'my field value'}}`)
@@ -375,15 +398,17 @@ migration.transformEntriesToType({
 
 For the complete version of this migration, please refer to [this example](./examples/22-transform-entries-to-type.js).
 
-#### `createTag(id[, opts])`
+#### `createTag(id[, opts, visibility])`
 
 Creates a tag with provided `id` and returns a reference to the newly created tag.
 
-**`id : string`** – The ID of the tag.
+- **`id : string`** – The ID of the tag.
 
-**`opts : Object`** – Tag definition, with the following options:
+- **`opts : Object`** – Tag definition, with the following options:
 
-- **`name : string`** – Name of the tag.
+  - **`name : string`** – Name of the tag.
+
+- **`visibility : 'private' | 'public'`** Tag visibility - defaults to `private`.
 
 #### `editTag(id[, opts])`
 
@@ -533,12 +558,21 @@ Creates a field with provided `id`.
 - **`omitted : boolean`** – Sets the field as omitted, hence not sent in response.
 - **`deleted : boolean`** – Sets the field as deleted. Requires to have been `omitted` first.
   _You may prefer using the `deleteField` method._
+- **`defaultValue : Object`**  – Sets the default value for the field.
+ Example:
+
+  ```javascript
+  defaultValue: {
+    "en-US": false,
+    "de-DE": true
+  }
+  ```
 
 #### `editField(id[, opts])` : [Field](#field)
 
 Edits the field of provided `id`.
 
-**`id : string`** – The ID of the field to delete.
+**`id : string`** – The ID of the field to edit.
 
 **`opts : Object`** – Same as [`createField`](#createfieldid--string-opts--object--field) listed above.
 
@@ -610,7 +644,9 @@ Changes control interface of given field's ID.
 
 **`widgetNamespace : string`** – The namespace of the widget, one of the following values:
 - `builtin` (Standard widget)
+- `app` (Custom App)
 - `extension` (Custom UI extension)
+- `app` (Custom app widget)
 
 **`widgetId : string`** – The new widget ID for the field. See the [editor interface documentation](https://www.contentful.com/developers/docs/concepts/editor-interfaces/) for a list of available widgets.
 
@@ -623,6 +659,9 @@ Changes control interface of given field's ID.
 - **`format : string`** _(only for fields of type datePicker)_ – One of “dateonly”, “time”, “timeZ” (default). Specifies whether to show the clock and/or timezone inputs.
 - **`ampm : string`** _(only for fields of type datePicker)_ – Specifies which type of clock to use. Must be one of the strings “12” or “24” (default).
 - **`bulkEditing : boolean`** _(only for fields of type Array)_ – Specifies whether bulk editing of linked entries is possible.
+- **`trackingFieldId : string`** _(only for fields of type slugEditor)_ – Specifies the ID of the field that will be used to generate the slug value.
+- **`showCreateEntityAction : boolean`** _(only for fields of type Link)_ - specifies whether creation of new entries from the field is enabled.
+- **`showLinkEntityAction : boolean`** _(only for fields of type Link)_ - specifies whether linking to existing entries from the field is enabled.
 
 #### `resetFieldControl (fieldId)` : void
 
@@ -772,6 +811,9 @@ runMigration({
   ...
 })
 ```
+
+## Updating Integration tests fixtures
+*  To add new/update integration tests, you need to set environment variable `NOCK_RECORD=1` which should automatically update fixtures
 
 
 ## Reach out to us

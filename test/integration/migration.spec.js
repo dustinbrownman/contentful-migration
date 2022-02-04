@@ -18,11 +18,15 @@ const changeEditorInterfaceWithExistingContentTypeAddingHelpText = require('../.
 const addSidebarWidgets = require('../../examples/24-add-sidebar-widgets-to-new-content-type');
 const addSidebarWidgetsToExisting = require('../../examples/27-add-sidebar-widgets-to-existing-content-type');
 const createTag = require('../../examples/28-create-tag');
+const createPublicTag = require('../../examples/32-create-public-tag');
+const createWithDefaultValue = require('../../examples/33-create-fields-with-default-values');
+const createWithLinkToNonExistingContentType = require('../../examples/34-create-with-link-to-non-existing-content-type.js');
 const modifyTag = require('../../examples/29-modify-tag');
 const deleteTag = require('../../examples/30-delete-tag');
 const setTagsForEntries = require('../../examples/31-set-tags-for-entries');
 
 const { createMigrationParser } = require('../../built/lib/migration-parser');
+const { DEFAULT_SIDEBAR_LIST } = require('../../built/lib/action/sidebarwidget');
 const co = Bluebird.coroutine;
 
 const record = require('../record');
@@ -34,7 +38,7 @@ after(recorder.after);
 
 const ENVIRONMENT_ID = 'env-integration';
 
-const SOURCE_TEST_SPACE = process.env.CONTENTFUL_INTEGRATION_SOURCE_SPACE;
+const SOURCE_TEST_SPACE = process.env.CONTENTFUL_SPACE_ID;
 
 describe('the migration', function () {
   this.timeout(30000);
@@ -222,10 +226,10 @@ describe('the migration', function () {
         validations: [
           {
             assetImageDimensions:
-              {
-                width: { min: 1199, max: null },
-                height: { min: 1343 }
-              }
+            {
+              width: { min: 1199, max: null },
+              height: { min: 1343 }
+            }
           }
         ]
       }
@@ -568,20 +572,15 @@ describe('the migration', function () {
     });
 
     expect(editorInterfaces.sidebar).to.eql([
+      ...DEFAULT_SIDEBAR_LIST,
       {
-        'disabled': false,
-        'settings': {},
-        'widgetId': 'publication-widget',
-        'widgetNamespace': 'sidebar-builtin'
-      },
-      {
-        'disabled': false,
-        'settings': {
-          'tagField': 'tags',
-          'imageField': 'image'
+        disabled: false,
+        settings: {
+          tagField: 'tags',
+          imageField: 'image'
         },
-        'widgetId': 'imageTaggingExtensionId',
-        'widgetNamespace': 'extension'
+        widgetId: 'imageTaggingExtensionId',
+        widgetNamespace: 'extension'
       }
     ]);
   }));
@@ -595,25 +594,20 @@ describe('the migration', function () {
     });
 
     expect(editorInterfaces.sidebar).to.eql([
+      ...DEFAULT_SIDEBAR_LIST,
       {
-        'disabled': false,
-        'settings': {},
-        'widgetId': 'publication-widget',
-        'widgetNamespace': 'sidebar-builtin'
-      },
-      {
-        'disabled': false,
-        'settings': {
-          'tagField': 'tags',
-          'imageField': 'image'
+        disabled: false,
+        settings: {
+          tagField: 'tags',
+          imageField: 'image'
         },
-        'widgetId': 'imageTaggingExtensionId',
-        'widgetNamespace': 'extension'
+        widgetId: 'imageTaggingExtensionId',
+        widgetNamespace: 'extension'
       }
     ]);
   }));
 
-  it('creates a tag', async function () {
+  it('creates a private tag by default', async function () {
     await migrator(createTag);
 
     const tag = await request({
@@ -622,6 +616,20 @@ describe('the migration', function () {
     });
     expect(tag.name).to.eql('marketing');
     expect(tag.sys.id).to.eql('sampletag');
+    expect(tag.sys.visibility).to.eql('private');
+  });
+
+  it('creates a public tag', async function () {
+    await migrator(createPublicTag);
+
+    const tag = await request({
+      method: 'GET',
+      url: '/tags/publicsampletag'
+    });
+
+    expect(tag.name).to.eql('public-marketing');
+    expect(tag.sys.id).to.eql('publicsampletag');
+    expect(tag.sys.visibility).to.eql('public');
   });
 
   it('modifies the name of an existing tag', async function () {
@@ -750,7 +758,8 @@ describe('the migration', function () {
         from: ['title'],
         setTagsForEntry: () => {
           return [];
-        } });
+        }
+      });
     });
 
     const blogEntries = await request({
@@ -762,5 +771,38 @@ describe('the migration', function () {
     });
 
     expect(blogEntries.items[0].metadata.tags).to.eql([]);
+  });
+
+  it('creates with default value', async function () {
+    await migrator(createWithDefaultValue);
+    const contentType = await request({
+      method: 'GET',
+      url: '/content_types/event'
+    });
+
+    expect(contentType.name).to.eql('Event');
+    expect(contentType.fields.find(f => f.name === 'Advertised').defaultValue).to.eql({
+      'en-US': true
+    });
+
+    const refContentType = await request({
+      method: 'GET',
+      url: '/content_types/refWithDefault'
+    });
+
+    expect(refContentType.name).to.eql('RefWithDefault');
+    expect(refContentType.fields[0].type).to.eql('Link');
+    expect(refContentType.fields[0].validations).to.eql([{ linkContentType: ['event'] }]);
+  });
+
+  it('creates content type with link to non-existing content type', async function () {
+    // FIXME This is not desired behavior, as ideally we would only
+    // allow migrations which link to existing content types.
+    await migrator(createWithLinkToNonExistingContentType);
+    const contentType = await request({
+      method: 'GET',
+      url: '/content_types/contentTypeWithLink'
+    });
+    expect(contentType.fields[0].id).to.eql('linkToNonExistingContentType');
   });
 });

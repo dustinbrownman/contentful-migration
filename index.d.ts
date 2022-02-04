@@ -1,14 +1,13 @@
 import * as axios from 'axios'
 
-export interface RunMigrationConfig {
-  filePath: string
+export type RunMigrationConfig = {
   accessToken?: string
   spaceId?: string
   environmentId?: string
   proxy?: string
   rawProxy?: boolean
   yes?: boolean
-}
+} & ({ filePath: string } | { migrationFunction: MigrationFunction })
 
 export function runMigration (config: RunMigrationConfig): Promise<any>
 
@@ -127,10 +126,12 @@ export interface IEditorInterfaceOptions {
   stars?: number
   /** (only for fields of type datePicker) – One of "dateonly", "time", "timeZ" (default). Specifies whether to show the clock and/or timezone inputs. */
   format?: 'dateonly' | 'time' | 'timeZ'
-  /** string (only for fields of type datePicker) – Specifies which type of clock to use. Must be one of the strings "12" or "24" (default). */
+  /** (only for fields of type datePicker) – Specifies which type of clock to use. Must be one of the strings "12" or "24" (default). */
   ampm?: '12' | '24'
   /** (only for References, many) Select whether to enable Bulk Editing mode */
   bulkEditing?: boolean
+  /** (only for fields of type slugEditor) – Specifies the ID of the field that will be used to generate the slug value. */
+  trackingFieldId?: string
 
   /** Instance settings for the sidebar widget as key-value pairs. */
   [setting: string]: WidgetSettingsValue
@@ -167,7 +168,7 @@ export interface ContentType {
   changeFieldId (oldId: string, newId: string): void
 
   /**
-   * 
+   *
    * @param widgetNamespace The namespace of the widget. Use 'builtin' for standard widgets,  'extension' for UI extensions or 'app' for installed apps.
    * @param widgetId The new widget ID for the field.
    * @param settings Widget settings
@@ -225,10 +226,10 @@ export interface ContentType {
    * @param settings Instance settings for the widget
    * @param insertBeforeWidgetId Insert widget above this widget in the sidebar. If null, the widget will be added to the end.
    */
-  addSidebarWidget (widgetNamespace: 'sidebar-builtin' | 'extension',
+  addSidebarWidget (widgetNamespace: 'sidebar-builtin' | 'extension' | 'app',
                     widgetId: string,
-                    settings: ISidebarWidgetSettings,
-                    insertBeforeWidgetId: string): void
+                    settings?: ISidebarWidgetSettings,
+                    insertBeforeWidgetId?: string | null): void
 
   /**
    * Updates the configuration of a widget in the sidebar of the content type.
@@ -237,7 +238,7 @@ export interface ContentType {
    * @param widgetId The ID of the widget to update.
    * @param settings Instance settings for the widget
    */
-  updateSidebarWidget (widgetNamespace: 'sidebar-builtin' | 'extension',
+  updateSidebarWidget (widgetNamespace: 'sidebar-builtin' | 'extension' | 'app',
                        widgetId: string,
                        settings: ISidebarWidgetSettings): void
 
@@ -247,7 +248,7 @@ export interface ContentType {
    * @param widgetNamespace The namespace of the widget. Use 'sidebar-builtin' for standard widgets or 'extension' for UI extensions.
    * @param widgetId The ID of the widget to remove.
    */
-  removeSidebarWidget (widgetNamespace: 'sidebar-builtin' | 'extension',
+  removeSidebarWidget (widgetNamespace: 'sidebar-builtin' | 'extension' | 'app',
                        widgetId: string): void
 
   /**
@@ -300,7 +301,7 @@ export interface ITransformEntriesToTypeConfig {
   shouldPublish?: boolean|"preserve",
   /** (optional) – Flag that specifies if linking entries should be updated with target entries (default false) */
   updateReferences?: boolean,
-  /** (optional) – Flag that specifies if source entries should be deleted (default false) */
+  /** (optional) – Flag that specifies if source entries should be deleted (default false). Note that this flag does not support Rich Text Fields references. */
   removeOldEntries?: boolean,
   /**
    * (required) – Transformation function to be applied.
@@ -347,8 +348,8 @@ export interface IDeriveLinkedEntriesConfig {
    *   fields is an object containing each of the from fields. Each field will contain their current localized values (i.e. fields == {myField: {'en-US': 'my field value'}})
    */
   identityKey: (fromFields: ContentFields) => string,
-  /** (optional) – If true, both the source and the derived entries will be published. If false, both will remain in draft state (default true) */
-  shouldPublish?: boolean,
+  /** (optional) – If true, both the source and the derived entries will be published. If false, both will remain in draft state. If preserve, will keep current states of the source entries (default true) */
+  shouldPublish?: boolean | 'preserve',
   /**
    * (required) – Function that generates the field values for the derived entry.
    *  fields is an object containing each of the from fields. Each field will contain their current localized values (i.e. fields == {myField: {'en-US': 'my field value'}})
@@ -359,6 +360,7 @@ export interface IDeriveLinkedEntriesConfig {
   deriveEntryForLocale: (inputFields: ContentFields, locale: string) => { [field: string]: any }
 }
 
+type TagVisibility = 'private' | 'public'
 export interface ITag {
   id: string
   instanceId: string
@@ -461,8 +463,9 @@ export default interface Migration {
    *
    * @param id string – The ID of the tag.
    * @param init Object – Tag definition
+   * @param tagVisibility string - Whether the tag should be public or private
    */
-  createTag (id: string, init?: ITagOptions): ITag
+  createTag (id: string, init?: ITagOptions, tagVisibility?: TagVisibility): ITag
 
   /**
    * Edits an existing tag of provided id and returns a reference to the tag. Uses the same options as createTag.

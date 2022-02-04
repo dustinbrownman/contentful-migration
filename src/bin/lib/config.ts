@@ -1,5 +1,6 @@
 import * as path from 'path'
 import * as os from 'os'
+import { v4 as uuidv4 } from 'uuid'
 
 // TODO: I'm ugly, maybe change me
 const homedir = process.env.NODE_ENV === 'test' ? '/tmp' : os.homedir()
@@ -48,7 +49,7 @@ function getArgvConfig ({ spaceId, environmentId = 'master', accessToken, proxy,
     proxy,
     rawProxy,
     requestBatchSize,
-    headers
+    headers: addSequenceHeader(headers)
   }
 
   if (!config.accessToken) {
@@ -112,6 +113,20 @@ function getConfig (argv) {
 const hasAlphaHeader = (feature: 'assembly-types') => {
   const alphaHeader = globalConfig.headers['x-contentful-enable-alpha-feature'] as string || ''
   return alphaHeader.includes(feature)
+}
+
+/**
+ * Adds a sequence header to a header object
+ * @param {object} headers
+ */
+function addSequenceHeader (headers) {
+  if (typeof headers !== 'object') throw new Error('addSequence function expects an object as input')
+
+  return {
+    ...headers,
+     // Unique sequence header
+    'CF-Sequence': uuidv4()
+  }
 }
 
 export default getConfig

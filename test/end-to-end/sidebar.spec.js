@@ -3,11 +3,12 @@
 const { expect } = require('chai');
 const cli = require('./cli');
 const { createDevEnvironment, deleteDevEnvironment, getDevEditorInterface } = require('../helpers/client');
+const { DEFAULT_SIDEBAR_LIST } = require('../../built/lib/action/sidebarwidget');
 
 const uuid = require('uuid');
 const ENVIRONMENT_ID = uuid.v4();
 
-const SOURCE_TEST_SPACE = process.env.CONTENTFUL_INTEGRATION_SOURCE_SPACE;
+const SOURCE_TEST_SPACE = process.env.CONTENTFUL_SPACE_ID;
 
 describe('apply sidebar migration examples', function () {
   this.timeout(30000);
@@ -29,21 +30,17 @@ describe('apply sidebar migration examples', function () {
       .end(async () => {
         const editorInterfaces = await getDevEditorInterface(SOURCE_TEST_SPACE, environmentId, 'customSidebar');
         const sidebar = editorInterfaces.sidebar;
+
         expect(sidebar).to.eql([
+          ...DEFAULT_SIDEBAR_LIST,
           {
-            'disabled': false,
-            'settings': {},
-            'widgetId': 'publication-widget',
-            'widgetNamespace': 'sidebar-builtin'
-          },
-          {
-            'disabled': false,
-            'settings': {
-              'tagField': 'tags',
-              'imageField': 'image'
+            disabled: false,
+            settings: {
+              tagField: 'tags',
+              imageField: 'image'
             },
-            'widgetId': 'imageTaggingExtensionId',
-            'widgetNamespace': 'extension'
+            widgetId: 'imageTaggingExtensionId',
+            widgetNamespace: 'extension'
           }
         ]);
         done();
@@ -58,20 +55,15 @@ describe('apply sidebar migration examples', function () {
         const editorInterfaces = await getDevEditorInterface(SOURCE_TEST_SPACE, environmentId, 'richTextTest');
         const sidebar = editorInterfaces.sidebar;
         expect(sidebar).to.eql([
+          ...DEFAULT_SIDEBAR_LIST,
           {
-            'disabled': false,
-            'settings': {},
-            'widgetId': 'publication-widget',
-            'widgetNamespace': 'sidebar-builtin'
-          },
-          {
-            'disabled': false,
-            'settings': {
-              'tagField': 'tags',
-              'imageField': 'image'
+            disabled: false,
+            settings: {
+              tagField: 'tags',
+              imageField: 'image'
             },
-            'widgetId': 'imageTaggingExtensionId',
-            'widgetNamespace': 'extension'
+            widgetId: 'imageTaggingExtensionId',
+            widgetNamespace: 'extension'
           }
         ]);
         done();

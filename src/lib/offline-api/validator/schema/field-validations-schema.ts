@@ -67,6 +67,7 @@ const enabledNodeTypes = validation('enabledNodeTypes', Joi.array().items(Joi.st
   'unordered-list',
   'hr',
   'blockquote',
+  'table',
   'embedded-entry-block',
   'embedded-asset-block',
   'hyperlink',

@@ -3,7 +3,7 @@ import type { AxiosRequestConfig } from 'axios'
 
 import chalk from 'chalk'
 import * as inquirer from 'inquirer'
-import Listr from 'listr'
+import { Listr } from 'listr2'
 import { createManagementClient } from './lib/contentful-client'
 const { version } = require('../../package.json')
 const {
@@ -64,18 +64,20 @@ export const createMakeRequest = (client: PlainClientAPI, { spaceId, environment
   }
 }
 
-const createRun = ({ shouldThrow }) => async function run (argv) {
-  let migrationFunction
-  const terminate = makeTerminatingFunction({ shouldThrow })
+const getMigrationFunctionFromFile = (filePath, terminate) => {
   try {
-    migrationFunction = require(argv.filePath)
+    return require(filePath)
   } catch (e) {
-    const message = chalk`{red.bold The ${argv.filePath} script could not be parsed, as it seems to contain syntax errors.}\n`
+    const message = chalk`{red.bold The ${filePath} script could not be parsed, as it seems to contain syntax errors.}\n`
     console.error(message)
     console.error(e)
     terminate(new Error(message))
   }
+}
 
+const createRun = ({ shouldThrow }) => async function run (argv) {
+  const terminate = makeTerminatingFunction({ shouldThrow })
+  const migrationFunction = argv.migrationFunction || getMigrationFunctionFromFile(argv.filePath, terminate)
   const application = argv.managementApplication || `contentful.migration-cli/${version}`
   const feature = argv.managementFeature || `migration-library`
 
@@ -119,7 +121,7 @@ const createRun = ({ shouldThrow }) => async function run (argv) {
     terminate(new ManyError('Payload Validation Errors', parseResult.payloadValidationErrors))
   }
 
-  const migrationName = path.basename(argv.filePath, '.js')
+  const migrationName = argv.migrationFunction ? argv.migrationFunction.name : path.basename(argv.filePath, '.js')
   const errorsFile = path.join(
     process.cwd(),
     `errors-${migrationName}-${Date.now()}.log`

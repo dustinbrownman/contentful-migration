@@ -6,6 +6,7 @@ import isDefined from '../utils/is-defined'
 
 import Entry from '../entities/entry'
 import * as _ from 'lodash'
+import shouldPublishLocalChanges from '../utils/should-publish-local-changes'
 
 class EntryDeriveAction extends APIAction {
   private contentTypeId: string
@@ -14,7 +15,7 @@ class EntryDeriveAction extends APIAction {
   private derivedContentType: string
   private deriveEntryForLocale: (inputFields: any, locale: string) => Promise<any>
   private identityKey: (fromFields: any) => Promise<string>
-  private shouldPublish: boolean
+  private shouldPublish: boolean | 'preserve'
 
   constructor (contentTypeId: string, entryDerivation: EntryDerive) {
     super()
@@ -93,7 +94,7 @@ class EntryDeriveAction extends APIAction {
 
         }
         await api.saveEntry(targetEntry.id)
-        if (this.shouldPublish) {
+        if (shouldPublishLocalChanges(this.shouldPublish, entry)) {
           await api.publishEntry(targetEntry.id)
         }
       }
@@ -110,7 +111,7 @@ class EntryDeriveAction extends APIAction {
       }
 
       await api.saveEntry(entry.id)
-      if (this.shouldPublish) {
+      if (shouldPublishLocalChanges(this.shouldPublish, entry)) {
         await api.publishEntry(entry.id)
       }
     }

@@ -5,7 +5,7 @@ const _ = require('lodash');
 const assert = require('./assertions');
 const cli = require('./cli');
 const { createDevEnvironment, deleteDevEnvironment, getEntries, makeRequest } = require('../helpers/client');
-const SOURCE_TEST_SPACE = process.env.CONTENTFUL_INTEGRATION_SOURCE_SPACE;
+const SOURCE_TEST_SPACE = process.env.CONTENTFUL_SPACE_ID;
 
 const uuid = require('uuid');
 const ENVIRONMENT_ID = uuid.v4();
@@ -81,8 +81,8 @@ describe('apply content transformation', function () {
       },
       data: {
         fields: {
-          'author': { 'en-US': 'Jane Austen' },
-          'authorCity': { 'en-US': 'Steventon' }
+          author: { 'en-US': 'Jane Austen' },
+          authorCity: { 'en-US': 'Steventon' }
         },
         metadata: {
           tags: [
